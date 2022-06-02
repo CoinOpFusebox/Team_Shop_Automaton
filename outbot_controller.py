@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------------------------------------------------#
 # outbot_controller.py
 #
-# This module provides a crude means of interfacing with the outbox_oni module.
+# This module provides a crude means of interfacing with the team_shop_outbot module.
 # It may be rendered obsolete later as greater automation is implemented.
 #
 # ---------------------------------------------------------------------------------------------------------------------#
