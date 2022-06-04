@@ -4,9 +4,20 @@ A suite of tools for processing Wilson Team Shop orders. Probably only useful to
 This project is intended to streamline and optimize, to the furthest capacity allowed by my skill level and available time, my current job duties.
 At present, it features the following modules:
 
-outbot_controller.py
-> Provides a simple CLI which allows the user to manually call team_shop_outbot.py by providing the path for the desired order folder.
-> May not be needed once more progress has been made.
-
 team_shop_outbot.py
 > Parses the contents of an order folder and the .CSV order count contained therein, then prepares one or more emails with appropriate text and attachments.
+
+outbot_controller.py
+> Provides a simple CLI which allows the user to manually call team_shop_outbot.py by providing the path for the desired order folder.
+> Good for testing, batch_hopper is probably more practical for everyday use.
+
+log_borg.py
+> Parses the contents of an order folder and the .CSV order count contained therein, then inserts a record into the Heat Transfer Inventory database.
+
+log_borg_controller.py
+> Provides a simple CLI which allows the user to manually call log_borg.py by providing the path for the desired order folder.
+> Good for testing, batch_hopper is probably more practical for everyday use.
+
+batch_hopper.py
+> Scans a folder (currently hardcoded, but shouldn't be) then runs each bottom-level folder through both team_shop_outbot.py and log_borg.py.
+> Process a bunch of orders, then log and send all of them with one click. Happy days!
