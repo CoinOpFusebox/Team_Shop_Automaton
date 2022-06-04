@@ -9,6 +9,12 @@ import csv
 import os
 import win32com.client as win32
 
+# OPTIONS
+#
+#  Set auto_send to True to send emails instead of saving them.
+
+auto_send = False
+
 
 def main(folder_path):
     # These variables keep track of what elements are included in the outbound order and which, if any, need to be
@@ -24,12 +30,12 @@ def main(folder_path):
     # Player numbers never appear on a garment without other heat transfers. If there are no heat transfers then there
     # are no numbers.
 
-    has_heat_transfers = 0
-    needs_heat_transfers = 0
-    has_player_numbers = 0
-    needs_player_numbers = 0
-    has_film = 0
-    has_embroidery = 0
+    has_heat_transfers = False
+    needs_heat_transfers = False
+    has_player_numbers = False
+    needs_player_numbers = False
+    has_film = False
+    has_embroidery = False
 
     # This block finds the path for the count .CSV in the folder. If it fails to do so, the module is terminated.
 
@@ -53,27 +59,27 @@ def main(folder_path):
 
         for line in reader:
             if 'Heat Transfer' in str(line):
-                has_heat_transfers = 1
+                has_heat_transfers = True
                 break
 
         # If there are heat transfers, this checks the count sheet for evidence of player numbers.
 
         csv_count.seek(0)
 
-        if has_heat_transfers == 1:
+        if has_heat_transfers:
             for line in reader:
                 if 'NUMBERS' in str(line):
-                    has_player_numbers = 1
+                    has_player_numbers = True
                     break
 
         # If there are player numbers, this checks if they need to be ordered.
 
         csv_count.seek(0)
 
-        if has_player_numbers == 1:
+        if has_player_numbers:
             for line in reader:
                 if 'ORDER' in str(line):
-                    needs_player_numbers = 1
+                    needs_player_numbers = True
                     break
 
         # This checks the count sheet for evidence of embroidered items.
@@ -82,35 +88,35 @@ def main(folder_path):
 
         for line in reader:
             if 'Embroidery' in str(line):
-                has_embroidery = 1
+                has_embroidery = True
                 break
 
     # This checks the folder for evidence of film items.
 
     for file in os.listdir(folder_path):
         if 'Film Art Actual' in str(file):
-            has_film = 1
+            has_film = True
             break
 
     # This checks the folder for evidence of heat transfers order pages, provided the order features heat transfers.
 
-    if has_heat_transfers == 1:
+    if has_heat_transfers:
         for file in os.listdir(folder_path):
             if 'ORDER Art Page' in str(file):
-                needs_heat_transfers = 1
+                needs_heat_transfers = True
                 break
 
     # This block selects the type of email(s) that will be sent based on the information gathered above.
 
-    if has_film == 1 and (needs_heat_transfers or needs_player_numbers) == 1:
+    if has_film and (needs_heat_transfers or needs_player_numbers):
         compose_combo(needs_heat_transfers, has_player_numbers, needs_player_numbers, has_embroidery, folder_path,
                       csv_path)
-    elif has_film == 1:
+    elif has_film:
         compose_film(has_heat_transfers, has_player_numbers, has_embroidery, folder_path, csv_path)
-    elif (needs_heat_transfers or has_player_numbers) == 1:
+    elif needs_heat_transfers or has_player_numbers:
         compose_transfer(needs_heat_transfers, has_player_numbers, needs_player_numbers, has_embroidery, folder_path,
                          csv_path)
-    elif has_embroidery == 1 and (has_heat_transfers or has_player_numbers) == 0:
+    elif has_embroidery and not (has_heat_transfers or has_player_numbers):
         compose_embroidery(folder_path, csv_path)
     else:
         compose_stock(has_embroidery, folder_path, csv_path)
@@ -156,16 +162,16 @@ def compose_combo(needs_heat_transfers, has_player_numbers, needs_player_numbers
 
     trans_body_list = ['This order also requires ']
 
-    if needs_heat_transfers == 1 and needs_player_numbers == 1:
+    if needs_heat_transfers and needs_player_numbers:
         trans_body_list.append('heat transfers and player numbers.')
-    elif needs_heat_transfers == 1 and has_player_numbers == 1:
+    elif needs_heat_transfers and has_player_numbers:
         trans_body_list.append('heat transfers. Its player numbers are covered by stock.')
-    elif needs_heat_transfers == 1:
+    elif needs_heat_transfers:
         trans_body_list.append('heat transfers. No player numbers.')
     else:
         trans_body_list.append('player numbers. Its heat transfers are covered by stock.')
 
-    if has_embroidery == 1:
+    if has_embroidery:
         trans_body_list.append('\n\nEmbroidered Items')
 
     # This block attaches the count sheet, the MLOrder file, and some combination of art pages and/or number sheets.
@@ -200,7 +206,7 @@ def compose_combo(needs_heat_transfers, has_player_numbers, needs_player_numbers
 
     mail_maker(trans_subject, trans_body_list, trans_attachment_list)
 
-    print('Emails generated: Combo\n')
+    print('\nEmails generated: Combo\n')
     return
 
 
@@ -211,14 +217,14 @@ def compose_film(has_heat_transfers, has_player_numbers, has_embroidery, folder_
 
     body_list = ['This order requires film. ']
 
-    if has_heat_transfers == 1 and has_player_numbers == 1:
+    if has_heat_transfers and has_player_numbers:
         body_list.append('Its heat transfers and player numbers are covered by stock.')
-    elif has_heat_transfers == 1:
+    elif has_heat_transfers:
         body_list.append('Its heat transfers are covered by stock. No player numbers.')
     else:
         body_list.append('No heat transfers. No player numbers.')
 
-    if has_embroidery == 1:
+    if has_embroidery:
         body_list.append('\n\nEmbroidered Items')
 
     attachment_list = [csv_path]
@@ -245,7 +251,7 @@ def compose_film(has_heat_transfers, has_player_numbers, has_embroidery, folder_
 
     mail_maker(subject, body_list, attachment_list)
 
-    print('Email generated: Film\n')
+    print('\nEmail generated:: Film\n')
     return
 
 
@@ -258,18 +264,18 @@ def compose_transfer(needs_heat_transfers, has_player_numbers, needs_player_numb
 
     body_list = [' No film.']
 
-    if needs_heat_transfers == 1 and needs_player_numbers == 1:
+    if needs_heat_transfers and needs_player_numbers:
         body_list.insert(0, 'This order requires heat transfers and player numbers.')
-    elif needs_heat_transfers == 1 and has_player_numbers == 1 and needs_player_numbers == 0:
+    elif needs_heat_transfers and has_player_numbers and not needs_player_numbers:
         body_list.insert(0, 'This order requires heat transfers. Its player numbers are covered by stock.')
-    elif needs_heat_transfers == 1 and has_player_numbers == 0:
+    elif needs_heat_transfers and not has_player_numbers:
         body_list.insert(0, 'This order requires heat transfers. No player numbers.')
-    elif needs_heat_transfers == 0 and needs_player_numbers == 1:
+    elif needs_player_numbers and not needs_heat_transfers:
         body_list.insert(0, 'This order requires player numbers. Its heat transfers are covered by stock.')
     else:
         body_list.insert(0, 'This order\'s heat transfers and player numbers are covered by stock.')
 
-    if has_embroidery == 1:
+    if has_embroidery:
         body_list.append('\n\nEmbroidered Items')
 
     attachment_list = [csv_path]
@@ -300,7 +306,7 @@ def compose_transfer(needs_heat_transfers, has_player_numbers, needs_player_numb
 
     mail_maker(subject, body_list, attachment_list)
 
-    print('Email generated: Heat Transfer\n')
+    print('\nEmail generated:: Heat Transfer\n')
     return
 
 
@@ -316,7 +322,7 @@ def compose_embroidery(folder_path, csv_path):
 
     mail_maker(subject, body_list, attachment_list)
 
-    print('Email generated: Embroidery\n')
+    print('\nEmail generated:: Embroidery\n')
     return
 
 
@@ -328,14 +334,14 @@ def compose_stock(has_embroidery, folder_path, csv_path):
 
     body_list = ['This order is covered by stock. No player numbers. No film.']
 
-    if has_embroidery == 1:
+    if has_embroidery:
         body_list.append('\n\nEmbroidered Items')
 
     attachment_list = [csv_path]
 
     mail_maker(subject, body_list, attachment_list)
 
-    print('Email generated: Stock\n')
+    print('\nEmail generated:: Stock\n')
     return
 
 
@@ -365,8 +371,7 @@ def mail_maker(subject, body_list, attachment_list):
     for item in attachment_list:
         mail_item.Attachments.Add(item)
 
-    mail_item.Save()
-
-    # Uncomment the next line to send the email instead of saving it.
-
-    # mail_item.Send()
+    if auto_send:
+        mail_item.Send()
+    else:
+        mail_item.Save()
