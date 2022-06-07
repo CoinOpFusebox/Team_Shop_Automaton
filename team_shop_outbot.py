@@ -251,7 +251,7 @@ def compose_film(has_heat_transfers, has_player_numbers, has_embroidery, folder_
 
     mail_maker(subject, body_list, attachment_list)
 
-    print('\nEmail generated:: Film\n')
+    print('\nEmail generated: Film\n')
     return
 
 
@@ -306,7 +306,7 @@ def compose_transfer(needs_heat_transfers, has_player_numbers, needs_player_numb
 
     mail_maker(subject, body_list, attachment_list)
 
-    print('\nEmail generated:: Heat Transfer\n')
+    print('\nEmail generated: Heat Transfer\n')
     return
 
 
@@ -322,7 +322,7 @@ def compose_embroidery(folder_path, csv_path):
 
     mail_maker(subject, body_list, attachment_list)
 
-    print('\nEmail generated:: Embroidery\n')
+    print('\nEmail generated: Embroidery\n')
     return
 
 
@@ -341,7 +341,7 @@ def compose_stock(has_embroidery, folder_path, csv_path):
 
     mail_maker(subject, body_list, attachment_list)
 
-    print('\nEmail generated:: Stock\n')
+    print('\nEmail generated: Stock\n')
     return
 
 
