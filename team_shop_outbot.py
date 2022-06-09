@@ -13,7 +13,7 @@ import win32com.client as win32
 #
 #  Set auto_send to True to send emails instead of saving them.
 
-auto_send = False
+auto_send = True
 
 
 def main(folder_path):
