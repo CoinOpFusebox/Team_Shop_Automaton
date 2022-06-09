@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------------------------------------------------#
-# batch_hopper.py
+# batch_caber_tosser.py
 #
 # This module scans the working folder for all bottom-level folders within, then runs them through the team_shop_outbot
 # and log_borg modules.
