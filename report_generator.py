@@ -46,7 +46,7 @@ for dirpath, dirnames, filenames in os.walk(working_folder_path):
                 search_string = 'Player Number'
                 player_numbers = False
 
-                with open(csv_path, 'r') as csv_count:
+                with open(csv_path, 'r', errors="ignore") as csv_count:
                     reader = csv.reader(csv_count)
 
                     for line in reader:
