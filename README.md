@@ -54,5 +54,7 @@ At present, it features the following modules:
 ### wilson_colors.py  *New!*
 > A library of Wilson CMYK colors for use with Illustrator.
 
+## Miscellaneous
+
 ### Improved Art Sheet.ai  *New!*
 > A streamlined art sheet template for use with the art sheet modules.
