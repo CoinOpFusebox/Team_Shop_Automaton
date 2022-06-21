@@ -20,7 +20,7 @@ def main(csv_path, count_film):
 
     # This opens the count file.
 
-    with open(csv_path, 'r') as csv_count:
+    with open(csv_path, 'r', errors="ignore") as csv_count:
         reader = csv.reader(csv_count)
 
         # before_string and after_string contain the text that abuts the desired lines.
