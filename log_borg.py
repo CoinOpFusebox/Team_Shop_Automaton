@@ -72,7 +72,7 @@ def main(folder_path):
 
     # This opens the count .CSV and checks it for various indicators as described below.
 
-    with open(csv_path, 'r') as csv_count:
+    with open(csv_path, 'r', errors="ignore") as csv_count:
         reader = csv.reader(csv_count)
 
         # This checks the count sheet for evidence of heat transfers and provides the total number of HTAs.
