@@ -151,6 +151,8 @@ def main(inbound_list, team_name, store_number, film_mode, page_number):
             translate_x = .5 * (rectangle.Width - art_sheet.Selection[0].Width)
             art_sheet.Selection[0].Translate(translate_x, 0)
 
+        illustrator.ExecuteMenuCommand('group')
+
         if tall_mode:
             art_sheet.Selection[0].Top = last_bottom
 
