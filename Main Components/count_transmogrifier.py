@@ -47,8 +47,11 @@ def main(csv_path, count_film):
                 if after_string in str(line):
                     break
 
-                inv_tuple = (str(quadifier(line[0])), int(line[1]))
-                outbound_list.append(inv_tuple)
+                try:
+                    inv_tuple = (str(quadifier(line[0])), int(line[1]))
+                    outbound_list.append(inv_tuple)
+                except:
+                    print('Not an HTA!')
         else:
             for line in reader:
                 if after_string in str(line):
@@ -59,8 +62,12 @@ def main(csv_path, count_film):
                 else:
                     type_string = 'Film'
 
-                inv_tuple = (str(quadifier(line[0])), int(line[1]), str(type_string))
-                outbound_list.append(inv_tuple)
+                try:
+                    inv_tuple = (str(quadifier(line[0])), int(line[1]), str(type_string))
+                    outbound_list.append(inv_tuple)
+                except:
+                    print('Not an HTA!')
+
     return outbound_list
 
 
