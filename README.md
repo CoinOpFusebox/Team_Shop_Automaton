@@ -17,6 +17,9 @@ At present, it features the following modules:
 ### art_page_combobulator.py  *New!*
 > Takes a count sheet and makes ORDER Art Pages and Film Art Actual pages from it.
 
+### lunar_order_former.py  *New!*
+> Takes one or more ORDER Art Pages and makes an MLOrder.
+
 ### log_borg.py
 > Parses the contents of an order folder and the .CSV order count contained therein, then inserts a record into the Heat Transfer Inventory database.
 
@@ -32,6 +35,9 @@ At present, it features the following modules:
 ### batch_art_page_generator.py  *New!*
 > Checks each base-level file for a count sheet and runs them all through the art_page_combobulator.
 
+### batch_lunar_orderer.py  *New!*
+> Checks each base-level file for a count sheet and runs them all through the lunar_order_former.
+
 ### batch_caber_tosser.py
 > Scans a folder (currently hardcoded) then runs each bottom-level folder through both team_shop_outbot and log_borg.
 > Process a bunch of orders, then log and send all of them with one click. Happy days!
@@ -40,6 +46,9 @@ At present, it features the following modules:
 
 ### combobulator_controller.py  *New!*
 > Takes a folder path and runs it through the art_page_combobulator.
+
+### lunar_orderer_controller.py  *New!*
+> Takes a folder path and runs it through the lunar_order_former.
 
 ### log_borg_controller.py
 > Provides a simple CLI which allows the user to manually call log_borg by providing the path for the desired order folder.
