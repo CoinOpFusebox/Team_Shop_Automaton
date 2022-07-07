@@ -15,23 +15,15 @@
 #
 # ---------------------------------------------------------------------------------------------------------------------#
 
-import win32com.client
-import os
 import more_itertools
+import os
+import win32com.client
+from configparser import ConfigParser
+from pathlib import Path
 
 import count_comparitron
 import count_transmogrifier
 from wilson_colors import scarlet
-
-# OPTIONS
-#
-# Set blank_sheet_path to the path where you keep your blank art sheet.
-# Set art_files_compiled_path to the path where the HTAs live. Make sure there's a \ at the end.
-# Set working_folder_path to the full path of whatever folder holds your order folders. Again, needs a \ at the end.
-
-blank_sheet_path = 'E:\\Projects\\Team Shop Automaton\\Sample Data\\Improved Art Sheet.ai'
-art_files_compiled_path = 'R:\\Transfers Heat others\\Art Files Compiled\\'
-working_folder_path = 'C:\\Users\\fredricg\\Downloads\\Working Folders\\'
 
 
 def main(inbound_list, team_name, store_number, film_mode, page_number):
@@ -40,6 +32,16 @@ def main(inbound_list, team_name, store_number, film_mode, page_number):
     # store_number is the number of the shop.
     # If film_mode is True, a Film Art Page will be prepared instead.
     # page_number is the page number for occasions where there are more than ten items. Zero indicates a single page.
+
+    # This block opens the configuration file and retrieves the required folder/file paths.
+
+    config_path = Path(__file__).parent.absolute().joinpath('config.ini')
+    config = ConfigParser()
+    config.read(config_path)
+
+    art_files_compiled_path = config['Folder Paths']['art_files_compiled_path']
+    blank_sheet_path = config['Folder Paths']['blank_sheet_path']
+    working_folder_path = config['Folder Paths']['working_folder_path']
 
     # This chunk opens Illustrator if it isn't open, then opens the blank art sheet and assigns it a name.
 
@@ -75,9 +77,78 @@ def main(inbound_list, team_name, store_number, film_mode, page_number):
     # This loop opens each required HTA in turn and places it on the art sheet.
 
     for order_hta in inbound_list:
+        # If the order has a lot of film names and numbers, they might need to be pushed to a new page.
+        # This ends the current page if it hits one of the spacers used to do that.
+
+        if order_hta[0] == ' ':
+            break
+
+        # Before doing all the HTA stuff, this checks if the item is a film Names and Numbers tag instead of an HTA.
+        # If it is, it must be the last item in the list, and this block will run instead of going through the for loop
+        # again. This will look for the film Names and Numbers file in the Sublimation Artwork 2 folder and, upon
+        # finding it, will place its contents in one or more available blocks.
+
+        if order_hta[0] == 'Names and Numbers':
+            # This opens the file, the path to which has been stored in the list by the count_transmogrifier.
+            # The contents of the file are selected, grouped, and copied, then the file is closed.
+
+            illustrator.Open(order_hta[2])
+            names_and_numbers_document = illustrator.ActiveDocument
+
+            illustrator.ExecuteMenuCommand('selectall')
+            illustrator.ExecuteMenuCommand('group')
+
+            names_and_numbers_document.Copy()
+            names_and_numbers_document.Close(2)
+
+            art_sheet.Paste()
+
+            # If the names and numbers are taller than one box and set to be placed at the bottom of the first column,
+            # this bumps them to the top of the second.
+
+            if box_count == 4 and art_sheet.Selection[0].Height > 765:
+                box_count = 5
+
+            # This finds the correct box and moves the names and numbers into it.
+
+            for item in art_sheet.PathItems:
+                if item.Name == 'R' + str(box_count):
+                    rectangle = item
+                    break
+
+            art_sheet.Selection[0].Position = rectangle.Position
+
+            if tall_mode:
+                art_sheet.Selection[0].Top = last_bottom
+            else:
+                art_sheet.Selection[0].Top = rectangle.Top - 10
+
+            if art_sheet.Selection[0].Width <= rectangle.Width:
+                art_sheet.Selection[0].Translate(DeltaX=(rectangle.Width * .25))
+
+            # If they don't fit into a box, this creates a background rectangle for easy visibility.
+
+            if art_sheet.Selection[0].Height > rectangle.Height or art_sheet.Selection[0].Width > rectangle.Width:
+                background_top = art_sheet.Selection[0].Top + 10
+                background_left = art_sheet.Selection[0].Left - 10
+                background_width = art_sheet.Selection[0].Width + 20
+                background_height = art_sheet.Selection[0].Height + 20
+
+                background_rectangle = art_sheet.PathItems.Rectangle(background_top,
+                                                                     background_left,
+                                                                     background_width,
+                                                                     background_height)
+
+                background_rectangle.FillColor = rectangle.FillColor
+
+                illustrator.ExecuteMenuCommand('sendToFront')
+                background_rectangle.Selected = True
+                illustrator.ExecuteMenuCommand('sendBackward')
+            break
+
         # This bit opens the hta and assigns it a name.
 
-        hta_path = ''.join([art_files_compiled_path, order_hta[0], '.ai'])
+        hta_path = ''.join([art_files_compiled_path, '\\',order_hta[0], '.ai'])
         illustrator.Open(hta_path)
         hta = illustrator.ActiveDocument
 
@@ -136,7 +207,7 @@ def main(inbound_list, team_name, store_number, film_mode, page_number):
 
         illustrator.ExecuteMenuCommand('group')
         hta.Copy()
-        hta.Close(1)
+        hta.Close(2)
 
         for item in art_sheet.PathItems:
             if item.Name == 'R' + str(box_count):
@@ -198,7 +269,7 @@ def main(inbound_list, team_name, store_number, film_mode, page_number):
     # Finally, to save a .PDF, you use the usual SaveAs() function, with pdf_save_options in place of the .AI ones.
 
     file_name = header.replace('\n', ' ')
-    save_path = ''.join([working_folder_path, team_name, '\\', store_number, '\\', file_name, '.ai'])
+    save_path = ''.join([working_folder_path, '\\', team_name, '\\', store_number, '\\', file_name, '.ai'])
 
     ai_save_options = win32com.client.Dispatch('Illustrator.IllustratorSaveOptions')
     ai_save_options.Compatibility = 15
@@ -208,7 +279,7 @@ def main(inbound_list, team_name, store_number, film_mode, page_number):
     pdf_save_options = win32com.client.Dispatch('Illustrator.PDFSaveOptions')
     art_sheet.SaveAs(save_path, pdf_save_options)
 
-    art_sheet.Close(1)
+    art_sheet.Close(2)
 
 
 def combobulate(folder_path):
@@ -278,6 +349,14 @@ def combobulate(folder_path):
     except:
         print('Film page(s) FAILED!')
         problem = True
+
+    # This ensures that all files are closed at the end to avoid things piling up in an error situation.
+
+    illustrator = win32com.client.gencache.EnsureDispatch('Illustrator.Application')
+    illustrator.ExecuteMenuCommand('closeAll')
+
+    # If anything went wrong, the module returns True. Otherwise, False. Soon all the main modules will do this so
+    # that the overall management module knows to stop and record where things went wrong.
 
     if problem:
         return True
