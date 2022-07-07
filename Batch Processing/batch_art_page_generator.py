@@ -8,14 +8,16 @@
 
 import os
 import win32com.client
+from configparser import ConfigParser
+from pathlib import Path
 
 import art_page_combobulator
 
-# OPTIONS
-#
-# Set working_folder_path to the full path of whatever folder holds your order folders.
+config_path = Path(__file__).parent.absolute().joinpath('config.ini')
+config = ConfigParser()
+config.read(config_path)
 
-working_folder_path = r'C:\Users\fredricg\Downloads\Working Folders'
+working_folder_path = config['Folder Paths']['working_folder_path']
 
 # This list prints at the end, in case anything goes wrong and needs individual attention.
 
@@ -36,7 +38,7 @@ for dirpath, dirnames, filenames in os.walk(working_folder_path):
             problem_list.append(dirpath)
 
         for document in illustrator.Documents:
-            document.Close(1)
+            document.Close(2)
 
 # This prints a list of problems for the user's perusal.
 
