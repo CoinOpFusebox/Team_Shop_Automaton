@@ -1,19 +1,15 @@
 # ---------------------------------------------------------------------------------------------------------------------#
 # team_shop_outbot.py
 #
-# This module prepares (and once it's thoroughly tested, sends) Wilson Team Shop order emails.
+# This module prepares and sends Wilson Team Shop order emails.
 #
 # ---------------------------------------------------------------------------------------------------------------------#
 
 import csv
 import os
 import win32com.client as win32
-
-# OPTIONS
-#
-#  Set auto_send to True to send emails instead of saving them.
-
-auto_send = True
+from configparser import ConfigParser
+from pathlib import Path
 
 
 def main(folder_path):
@@ -350,19 +346,16 @@ def mail_maker(subject, body_list, attachment_list):
     # This works through Outlook using the COM interface instead of just using smtplib for two reasons:
     # 1. I need to send the emails from my work account to avoid confusion.
     # 2. Microsoft seems to be phasing out external SMTP access to Outlook, and as such I don't appear to have access.
-    #
-    # For now, it saves the email as a draft to be reviewed and sent.
-    # Once I've tested it thoroughly I may make it send them instead if I'm feeling zesty.
+
+    config_path = Path(__file__).parent.absolute().joinpath('config.ini')
+    config = ConfigParser()
+    config.read(config_path)
+    recipient_list = str(config['Outbot Options']['recipient_list']).split(',')
+    auto_send = config.getboolean('Outbot Options', 'auto_send')
 
     outlook = win32.Dispatch('Outlook.Application')
     mail_item = outlook.CreateItem(0)
     mail_item.Subject = subject
-
-    recipient_list = ['brendon.froemke@amersports.com',
-                      'jessica.griffin@wilson.com',
-                      'dewayne.marcus@wilson.com',
-                      'clay.palentyn@wilson.com',
-                      'julie.wiley@wilson.com']
 
     mail_item.To = '; '.join(recipient_list)
     mail_item.Body = ''.join(body_list)
