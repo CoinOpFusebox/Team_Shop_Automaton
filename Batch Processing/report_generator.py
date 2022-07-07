@@ -11,12 +11,14 @@ import csv
 import os
 import count_comparitron
 import count_transmogrifier
+from configparser import ConfigParser
+from pathlib import Path
 
-# OPTIONS
-#
-# Set working_folder_path to the full path of whatever folder holds your order folders.
+config_path = Path(__file__).parent.absolute().joinpath('config.ini')
+config = ConfigParser()
+config.read(config_path)
 
-working_folder_path = r'C:\Users\fredricg\Downloads\Working Folders'
+working_folder_path = config['Folder Paths']['working_folder_path']
 
 # This block checks each folder that exists somewhere within the working folder.
 # Any folder with no other folders in it is processed.
