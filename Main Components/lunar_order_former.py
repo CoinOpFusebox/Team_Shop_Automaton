@@ -6,25 +6,31 @@
 # ---------------------------------------------------------------------------------------------------------------------#
 
 import os
+
 import win32com.client
-
-# OPTIONS
-#
-# Set blank_order_path to the path where you keep your blank MLOrder.
-
-blank_order_path = r'C:\Users\fredricg\OneDrive - Amer Sports\Documents\Work Stuff\Templates\MLOrder.xlsm'
+from configparser import ConfigParser
+from pathlib import Path
 
 
 def main(folder_path):
+    # This block opens the configuration file and retrieves the blank order form path.
 
-    team_name = folder_path.split(os.path.sep)[-2]
-    store_number = folder_path.split(os.path.sep)[-1]
+    config_path = Path(__file__).parent.absolute().joinpath('config.ini')
+    config = ConfigParser()
+    config.read(config_path)
 
+    blank_order_path = config['Folder Paths']['blank_order_path']
+
+    # team_name is the name of the team.
+    # store_number is the number of the store.
     # art_sheet_path is the path for the current ORDER Art Page. This will change repeatedly in multi-page applications.
     # order_path is the path where the completed MLOrder will be saved.
     # multi_mode is activated when multiple art pages are present.
     # persevere will get switched off when the HTAs run out, causing the loop to end.
     # multi_page_count tracks the current number of MLOrder pages.
+
+    team_name = folder_path.split(os.path.sep)[-2]
+    store_number = folder_path.split(os.path.sep)[-1]
 
     art_sheet_path = ''.join([folder_path, '\\', team_name, ' ', store_number, ' ORDER Art Page.ai'])
     order_path = ''.join([folder_path, '\\', 'MLOrder ', team_name, ' ', store_number, '.xlsm'])
@@ -47,16 +53,26 @@ def main(folder_path):
     try:
         illustrator.Open(art_sheet_path)
         art_sheet = illustrator.ActiveDocument
-    except:
-        try:
-            art_sheet_path = ''.join([folder_path, '\\', team_name, ' ', store_number, ' ORDER Art Page 0',
-                                      str(multi_page_count), '.ai'])
-            illustrator.Open(art_sheet_path)
-            art_sheet = illustrator.ActiveDocument
-            multi_mode = True
-        except:
-            print('No art sheet found!')
-            return
+    except BaseException as base_exception:
+        if base_exception.args[0] == -2147352567:
+            try:
+                art_sheet_path = ''.join([folder_path, '\\', team_name, ' ', store_number, ' ORDER Art Page 0',
+                                          str(multi_page_count), '.ai'])
+                illustrator.Open(art_sheet_path)
+                art_sheet = illustrator.ActiveDocument
+                multi_mode = True
+            except BaseException as base_exception:
+                if base_exception.args[0] == -2147352567:
+                    print('No art sheet found!')
+
+                    excel.DisplayAlerts = False
+                    excel.Quit()
+
+                    return
+                else:
+                    raise base_exception
+        else:
+            raise base_exception
 
     # header_text holds the text that will be inserted at the top of the first page of an MLOrder.
 
@@ -146,7 +162,7 @@ def main(folder_path):
 
         # This closes the art sheet.
 
-        art_sheet.Close(1)
+        art_sheet.Close(2)
 
         # If multi_mode is active, the multi_page_count is incremented to signify the passage to the next page.
         # The art_sheet_path is updated so that the next page can be opened. If another art page is not found, persevere
@@ -162,8 +178,11 @@ def main(folder_path):
                 illustrator.Open(art_sheet_path)
                 art_sheet = illustrator.ActiveDocument
 
-            except:
-                persevere = False
+            except BaseException as base_exception:
+                if base_exception.args[0] == -2147352567:
+                    persevere = False
+                else:
+                    raise base_exception
 
             # If the next art page has been opened, this loop gets the next MLOrder page ready.
             #
