@@ -7,15 +7,10 @@
 # ---------------------------------------------------------------------------------------------------------------------#
 
 import os
+
 import pyodbc
 import re
 from dotenv import load_dotenv
-
-# OPTIONS
-#
-# Set info_dump to True for extra text feedback.
-
-info_dump = False
 
 
 def main(outbound_list):
@@ -93,7 +88,7 @@ def main(outbound_list):
         # database quy, not sure) either replaces the spaces with hyphens or just omits them. Both possibilities are
         # checked for here.
         #
-        # When in doubt, this module errs on the side of ordering what it doesn't understand, to be safe.
+        # When in doubt, this module errs on the side of ordering what it doesn't understand.
 
         if units_needed > 0:
             try:
@@ -107,7 +102,7 @@ def main(outbound_list):
                         units_to_order = (5 * round((units_needed * 1.5) / 5))
                     inbound_tuple = (whole_hta_string, units_to_order)
                     inbound_list.append(inbound_tuple)
-            except:
+            except TypeError:
                 if ' ' in hta_name:
                     hta_name = hta_name.replace(' ', '-')
                     try:
@@ -122,7 +117,7 @@ def main(outbound_list):
                                 units_to_order = (5 * round((units_needed * 1.5) / 5))
                             inbound_tuple = (whole_hta_string, units_to_order)
                             inbound_list.append(inbound_tuple)
-                    except:
+                    except TypeError:
                         hta_name = hta_name.replace('-', '')
                         try:
                             units_on_hand = int(
@@ -136,7 +131,7 @@ def main(outbound_list):
                                     units_to_order = (5 * round((units_needed * 1.5) / 5))
                                 inbound_tuple = (whole_hta_string, units_to_order)
                                 inbound_list.append(inbound_tuple)
-                        except:
+                        except TypeError:
                             if units_needed <= 13:
                                 units_to_order = 20
                             else:
@@ -150,12 +145,6 @@ def main(outbound_list):
                         units_to_order = (5 * round((units_needed * 1.5) / 5))
                     inbound_tuple = (whole_hta_string, units_to_order)
                     inbound_list.append(inbound_tuple)
-
-    if info_dump:
-        if inbound_list:
-            print(inbound_list)
-        else:
-            print('All units covered by stock!')
 
     if inbound_list:
         return inbound_list
