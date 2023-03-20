@@ -1,7 +1,7 @@
 # Team_Shop_Automaton
 A suite of tools for processing Wilson Team Shop orders. Probably only useful to me, but feel free to grab any chunks you find useful!
 
-This project is now feature-complete! I'm still making little adjustments as needed (mostly to the typo filters), but I'd call this Version 1.0.
+This project is now feature-complete! I'm still making little adjustments as needed (mostly to the typo filters).
 
 ## Main Components
 
