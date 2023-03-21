@@ -767,7 +767,7 @@ def color_picker(color_string):
         return 'Chr'
     elif 'silver'.casefold() in color_string.casefold():
         return 'Slg'
-    elif 'grey'.casefold() in color_string.casefold():
+    elif 'grey'.casefold() in color_string.casefold() or 'gray'.casefold() in color_string.casefold():
         return 'Blg'
     elif 'vic'.casefold() in color_string.casefold():
         return 'Vic'
