@@ -831,7 +831,7 @@ def color_picker(color_string):
     elif 'elec'.casefold() in color_string.casefold():
         return 'Ebl'
     elif 'show'.casefold() in color_string.casefold():
-        return 'Sho'
+        return 'Sth'
     else:
         return '???'
 
