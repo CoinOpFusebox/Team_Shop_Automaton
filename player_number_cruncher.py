@@ -24,6 +24,8 @@ config = ConfigParser()
 config.read(config_path)
 
 number_path = config['Folder Paths']['number_path']
+milb_list = str(config['Special Teams']['milb_list']).split(',')
+direct_transfer_list = str(config['Special Teams']['direct_transfer_list']).split(',')
 
 # This dictionary matches abbreviated colors with their full names and their short names.
 
@@ -71,9 +73,16 @@ chromotome = {
 
 
 def main(folder_path):
-    csv_path = ''
+    # This block skips the player number process for special teams (who get film or direct transfer numbers).
+
+    if any(word in str(folder_path.split(os.path.sep)[-2]) for word in milb_list) or \
+            any(word in str(folder_path.split(os.path.sep)[-2]) for word in direct_transfer_list):
+        print('No player numbers!')
+        return None
 
     # This block finds the .CSV count file in the folder, if there is one, then checks it for numbers.
+
+    csv_path = ''
 
     for file in os.listdir(folder_path):
         if file.endswith('.csv'):
