@@ -11,6 +11,15 @@ import win32com.client as win32
 from configparser import ConfigParser
 from pathlib import Path
 
+config_path = Path(__file__).parent.absolute().joinpath('config.ini')
+config = ConfigParser()
+config.read(config_path)
+
+recipient_list = str(config['Outbot Options']['recipient_list']).split(',')
+auto_send = config.getboolean('Outbot Options', 'auto_send')
+milb_list = str(config['Special Teams']['milb_list']).split(',')
+direct_transfer_list = str(config['Special Teams']['direct_transfer_list']).split(',')
+
 
 def main(folder_path):
     # These variables keep track of what elements are included in the outbound order and which, if any, need to be
@@ -206,7 +215,10 @@ def compose_film(has_heat_transfers, has_player_numbers, has_embroidery, folder_
     # This function is used for orders that need film elements but no heat transfer elements.
     # For more documentation, please see the comments on the "compose_combo" function.
 
-    body_list = ['This order requires film. ']
+    if any(word in str(folder_path.split(os.path.sep)[-2]) for word in milb_list):
+        body_list = ['This order requires film (MiLB). ']
+    else:
+        body_list = ['This order requires film. ']
 
     if has_heat_transfers and has_player_numbers:
         body_list.append('Its heat transfers and player numbers are covered by stock.')
@@ -323,7 +335,10 @@ def compose_stock(has_embroidery, folder_path, csv_path):
 
     subject = folder_path.split(os.path.sep)[-2] + ' ' + folder_path.split(os.path.sep)[-1]
 
-    body_list = ['This order is covered by stock. No player numbers. No film.']
+    if any(word in str(folder_path.split(os.path.sep)[-2]) for word in direct_transfer_list):
+        body_list = ['This order requires Direct Transfer items. No player numbers. No film.']
+    else:
+        body_list = ['This order is covered by stock. No player numbers. No film.']
 
     if has_embroidery:
         body_list.append(' \nEmbroidered Items')
@@ -338,12 +353,6 @@ def compose_stock(has_embroidery, folder_path, csv_path):
 
 def mail_maker(subject, body_list, attachment_list):
     # This function takes the prepared email components from any one of the "compose" functions and creates an email.
-
-    config_path = Path(__file__).parent.absolute().joinpath('config.ini')
-    config = ConfigParser()
-    config.read(config_path)
-    recipient_list = str(config['Outbot Options']['recipient_list']).split(',')
-    auto_send = config.getboolean('Outbot Options', 'auto_send')
 
     outlook = win32.Dispatch('Outlook.Application')
     mail_item = outlook.CreateItem(0)
