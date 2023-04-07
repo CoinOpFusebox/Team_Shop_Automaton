@@ -310,14 +310,14 @@ def combobulate(folder_path, skip_heat_transfers=False):
             csv_path = os.path.join(folder_path, file)
             if any(word in str(folder_path.split(os.path.sep)[-2]) for word in milb_list):
                 transfer_list = []
-                film_list = count_transmogrifier.count_milb_film(csv_path)
+                film_list = count_comparitron.compare_helmets(count_transmogrifier.count_milb_film(csv_path))
                 break
             elif any(word in str(folder_path.split(os.path.sep)[-2]) for word in direct_transfer_list):
                 transfer_list = []
-                film_list = count_transmogrifier.count_film(csv_path)
+                film_list = count_comparitron.compare_helmets(count_transmogrifier.count_film(csv_path))
             else:
-                transfer_list = count_comparitron.main(count_transmogrifier.count_heat_transfers(csv_path))
-                film_list = count_transmogrifier.count_film(csv_path)
+                transfer_list = count_comparitron.compare_transfers(count_transmogrifier.count_heat_transfers(csv_path))
+                film_list = count_comparitron.compare_helmets(count_transmogrifier.count_film(csv_path))
                 break
 
     if csv_path == '':
