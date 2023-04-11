@@ -238,9 +238,10 @@ def crunch(line, kid_mode, crunched_list, folder_path):
             front_total_digits = len(''.join(front_number_list))
 
     # This block gets the font.
-    # I've included the four normal fonts for now; other fonts will be added later (or dealt with manually).
 
-    if any(word in sparta_notes.casefold() for word in ['full'.casefold(), 'fbk'.casefold()]):
+    if any(word in sparta_notes.casefold() for word in ['flag'.casefold(), 'america'.casefold()]):
+        font = 'Usa'
+    elif any(word in sparta_notes.casefold() for word in ['full'.casefold(), 'fbk'.casefold()]):
         font = 'Fbk'
     elif any(word in sparta_notes.casefold() for word in ['fancy'.casefold(), 'fan'.casefold()]):
         font = 'Fan'
@@ -262,7 +263,7 @@ def crunch(line, kid_mode, crunched_list, folder_path):
 
     # This block gets the colors.
 
-    color_string = sparta_notes.split('-C')[-1].split('A')[0]
+    color_string = sparta_notes.split('-C')[-1]
 
     if number_of_colors == 1:
         color_1 = color_picker(color_string)
@@ -463,6 +464,9 @@ def craft(player_number_list, folder_path, csv_path):
     order_list = []
 
     for player_numbers in player_number_list:
+        # freedom_mode activates for the special American flag lettering.
+        freedom_mode = False
+
         # This block gets the path for the template file.
 
         if player_numbers.color_3:
@@ -472,23 +476,24 @@ def craft(player_number_list, folder_path, csv_path):
         else:
             color_count = '1-C'
 
-        template_path = ''.join(
-            (number_path, '\\', player_numbers.font.upper(), '\\', color_count, '\\', player_numbers.size, ' ',
-             player_numbers.font, '.ai'))
-
-        # This block selects a special path for two-color Full Block show-through numbers.
-        # If I ever see another kind of show-through numbers I'll deal with it then.
-
         if player_numbers.color_1 == 'Sth':
             template_path = ''.join((number_path, '\\', player_numbers.font.upper(), '\\STH\\', player_numbers.size,
                                      ' ', player_numbers.font, '.ai'))
-
+        elif player_numbers.font == 'Usa':
+            freedom_mode = True
+            player_numbers.font = 'Fbk'
+            template_path = ''.join((number_path, '\\', player_numbers.font.upper(), '\\USA\\', player_numbers.size,
+                                     ' ', player_numbers.font, '.ai'))
+        else:
+            template_path = ''.join(
+                (number_path, '\\', player_numbers.font.upper(), '\\', color_count, '\\', player_numbers.size, ' ',
+                 player_numbers.font, '.ai'))
         # This block opens Illustrator and the template file.
 
         illustrator = win32com.client.gencache.EnsureDispatch('Illustrator.Application')
         illustrator.UserInteractionLevel = -1
 
-        sleep(10)
+        sleep(2)
 
         illustrator.Open(template_path)
         number_sheet = illustrator.ActiveDocument
@@ -517,61 +522,68 @@ def craft(player_number_list, folder_path, csv_path):
         else:
             long_font = '???'
 
-        info_block = ''.join((long_font, '\n', player_numbers.size.replace('N', '"'), ' ', color_count, '\n',
-                              chromotome[player_numbers.color_1]))
+        if freedom_mode:
+            info_block = ''.join((long_font, '\n', player_numbers.size.replace('N', '"'), ' ', color_count, '\n',
+                                  r'USA (White/Scarlet/Navy)'))
+        else:
+            info_block = ''.join((long_font, '\n', player_numbers.size.replace('N', '"'), ' ', color_count, '\n',
+                                  chromotome[player_numbers.color_1]))
 
-        if player_numbers.color_2:
-            info_block = ''.join((info_block, '/', chromotome[player_numbers.color_2]))
+            if player_numbers.color_2:
+                info_block = ''.join((info_block, '/', chromotome[player_numbers.color_2]))
 
-        if player_numbers.color_3:
-            info_block = ''.join((info_block, '/', chromotome[player_numbers.color_3]))
+            if player_numbers.color_3:
+                info_block = ''.join((info_block, '/', chromotome[player_numbers.color_3]))
 
-        for item in number_sheet.TextFrames:
-            if 'Mint' in item.Contents:
-                item.Contents = info_block
-                break
+            for item in number_sheet.TextFrames:
+                if 'Mint' in item.Contents:
+                    item.Contents = info_block
+                    break
 
-        # This block sets the colors.
+            # This block sets the colors.
 
-        for group in number_sheet.GroupItems:
-            if group.Name == 'Color 1':
-                wilson_color = getattr(wilson_colors, chromotome[player_numbers.color_1].replace(' ', '_').lower())
-                for item in group.PathItems:
-                    item.SetFillColor(wilson_color)
-                    sleep(.2)
-                for item in group.CompoundPathItems:
-                    for sub_item in item.PathItems:
-                        sub_item.SetFillColor(wilson_color)
+            for group in number_sheet.GroupItems:
+                if group.Name == 'Color 1':
+                    wilson_color = getattr(wilson_colors, chromotome[player_numbers.color_1].replace(' ', '_').lower())
+                    for item in group.PathItems:
+                        item.SetFillColor(wilson_color)
                         sleep(.2)
+                    for item in group.CompoundPathItems:
+                        for sub_item in item.PathItems:
+                            sub_item.SetFillColor(wilson_color)
+                            sleep(.2)
 
-            if group.Name == 'Color 2':
-                wilson_color = getattr(wilson_colors, chromotome[player_numbers.color_2].replace(' ', '_').lower())
-                for item in group.PathItems:
-                    item.SetFillColor(wilson_color)
-                    sleep(.2)
-                for item in group.CompoundPathItems:
-                    for sub_item in item.PathItems:
-                        sub_item.SetFillColor(wilson_color)
+                if group.Name == 'Color 2':
+                    wilson_color = getattr(wilson_colors, chromotome[player_numbers.color_2].replace(' ', '_').lower())
+                    for item in group.PathItems:
+                        item.SetFillColor(wilson_color)
                         sleep(.2)
+                    for item in group.CompoundPathItems:
+                        for sub_item in item.PathItems:
+                            sub_item.SetFillColor(wilson_color)
+                            sleep(.2)
 
-            if group.Name == 'Color 3':
-                wilson_color = getattr(wilson_colors, chromotome[player_numbers.color_3].replace(' ', '_').lower())
-                for item in group.PathItems:
-                    item.SetFillColor(wilson_color)
-                    sleep(.2)
-                for item in group.CompoundPathItems:
-                    for sub_item in item.PathItems:
-                        sub_item.SetFillColor(wilson_color)
+                if group.Name == 'Color 3':
+                    wilson_color = getattr(wilson_colors, chromotome[player_numbers.color_3].replace(' ', '_').lower())
+                    for item in group.PathItems:
+                        item.SetFillColor(wilson_color)
                         sleep(.2)
+                    for item in group.CompoundPathItems:
+                        for sub_item in item.PathItems:
+                            sub_item.SetFillColor(wilson_color)
+                            sleep(.2)
 
         # This block inserts the number block into the number sheet.
         # Along the way, it stores the number data on the holding sheet for later insertion into the count sheet.
 
         # This first chunk creates the header.
 
-        working_sheet.Cells(1, 1).Value = ' '.join((player_numbers.font, str(player_numbers.color_1),
-                                                    str(player_numbers.color_2),
-                                                    str(player_numbers.color_3))).replace('0', '').rstrip()
+        if freedom_mode:
+            working_sheet.Cells(1, 1).Value = 'Fbk USA'
+        else:
+            working_sheet.Cells(1, 1).Value = ' '.join((player_numbers.font, str(player_numbers.color_1),
+                                                        str(player_numbers.color_2),
+                                                        str(player_numbers.color_3))).replace('0', '').rstrip()
         working_sheet.Cells(3, 1).Value = player_numbers.size.replace('N', '"')
         working_sheet.Cells(3, 2).Value = 'Need'
 
@@ -664,7 +676,10 @@ def craft(player_number_list, folder_path, csv_path):
 
         # This saves and closes the number sheet.
 
-        if player_numbers.color_3:
+        if freedom_mode:
+            save_path = ''.join((folder_path, '\\', folder_path.split(os.path.sep)[-2], ' ',
+                                 folder_path.split(os.path.sep)[-1], ' ', player_numbers.size, ' Fbk USA.ai'))
+        elif player_numbers.color_3:
             save_path = ''.join((folder_path, '\\', folder_path.split(os.path.sep)[-2], ' ',
                                  folder_path.split(os.path.sep)[-1], ' ', player_numbers.size, ' ', player_numbers.font,
                                  ' ', player_numbers.color_1, ' ', player_numbers.color_2, ' ', player_numbers.color_3,
