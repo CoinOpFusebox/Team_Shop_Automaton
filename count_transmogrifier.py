@@ -143,7 +143,7 @@ def count_film(csv_path):
         # This will fail if a player is named "Anne" or "Nona" when there is also a "None", but c'est la vie.
 
         for line in reader:
-            if 'glove'.casefold() in str(line).casefold():
+            if 'glove'.casefold() in str(line).casefold() or 'RDX'.casefold() in str(line).casefold():
                 continue
 
             try:
@@ -363,7 +363,7 @@ def count_milb_film(csv_path):
         # This will fail if a player is named "Anne" or "Nona" when there is also a "None", but c'est la vie.
 
         for line in reader:
-            if 'glove'.casefold() in str(line).casefold():
+            if 'glove'.casefold() in str(line).casefold() or 'RDX'.casefold() in str(line).casefold():
                 continue
 
             try:
