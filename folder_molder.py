@@ -79,7 +79,7 @@ def main():
         if line_count < 10:
             last_message.Move(archive)
             os.remove(temp_path)
-            print('Blank count!')
+            print('Blank count!\n')
             return 'Blank count!'
         else:
             os.remove(temp_path)
