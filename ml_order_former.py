@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------------------------------------------------#
 # ml_order_former.py
 #
-# This module creates an MLOrder from an ORDER Art Page.
+# This module creates an MLOrder from an Order Art Page.
 #
 # ---------------------------------------------------------------------------------------------------------------------#
 
@@ -23,7 +23,7 @@ def order_heat_transfers(folder_path):
 
     # team_name is the name of the team.
     # store_number is the number of the store.
-    # art_sheet_path is the path for the current ORDER Art Page. This will change repeatedly in multi-page applications.
+    # art_sheet_path is the path for the current Order Art Page. This will change repeatedly in multi-page applications.
     # order_path is the path where the completed MLOrder will be saved.
     # multi_mode is activated when multiple art pages are present.
     # persevere will get switched off when the HTAs run out, causing the loop to end.
@@ -33,7 +33,7 @@ def order_heat_transfers(folder_path):
     team_name = folder_path.split(os.path.sep)[-2]
     store_number = folder_path.split(os.path.sep)[-1]
 
-    art_sheet_path = ''.join((folder_path, '\\', team_name, ' ', store_number, ' ORDER Art Page.ai'))
+    art_sheet_path = ''.join((folder_path, '\\', team_name, ' ', store_number, ' Order Art Page.ai'))
     order_path = ''.join((folder_path, '\\', 'MLOrder ', team_name, ' ', store_number, '.xlsm'))
 
     multi_mode = False
@@ -49,7 +49,7 @@ def order_heat_transfers(folder_path):
     order_sheet = excel.Workbooks.Open(blank_order_path)
     order_sheet_page = order_sheet.Worksheets('Order Form')
 
-    # This block will first try to open a stand-alone ORDER Art Page. If it fails, it will look for one ending in "01".
+    # This block will first try to open a stand-alone Order Art Page. If it fails, it will look for one ending in "01".
     # If it finds a post-numbered art page, it will switch on multi_mode and continue.
     # Otherwise, the module ceases its function.
 
@@ -59,7 +59,7 @@ def order_heat_transfers(folder_path):
     except BaseException as base_exception:
         if base_exception.args[0] == -2147352567:
             try:
-                art_sheet_path = ''.join((folder_path, '\\', team_name, ' ', store_number, ' ORDER Art Page 0',
+                art_sheet_path = ''.join((folder_path, '\\', team_name, ' ', store_number, ' Order Art Page 0',
                                           str(multi_page_count), '.ai'))
                 illustrator.Open(art_sheet_path)
                 art_sheet = illustrator.ActiveDocument
@@ -175,7 +175,7 @@ def order_heat_transfers(folder_path):
         if multi_mode:
             multi_page_count += 1
 
-            art_sheet_path = ''.join((folder_path, '\\', team_name, ' ', store_number, ' ORDER Art Page 0',
+            art_sheet_path = ''.join((folder_path, '\\', team_name, ' ', store_number, ' Order Art Page 0',
                                       str(multi_page_count), '.ai'))
 
             try:
@@ -202,7 +202,7 @@ def order_heat_transfers(folder_path):
                     order_book_count = multi_page_count // 3
                     order_path = ''.join((folder_path, '\\', 'MLOrder ', team_name, ' ', store_number, ' Part 0',
                                           str(order_book_count), '.xlsm'))
-                    order_sheet.SaveAs(order_path)
+                    order_sheet.SaveAs(order_path, FileFormat=52)
                     excel.DisplayAlerts = False
                     excel.Quit()
                     order_path = ''.join((folder_path, '\\', 'MLOrder ', team_name, ' ', store_number, ' Part 0',
@@ -221,7 +221,7 @@ def order_heat_transfers(folder_path):
             persevere = False
 
     excel.DisplayAlerts = False
-    order_sheet.SaveAs(order_path)
+    order_sheet.SaveAs(order_path, FileFormat=52)
     excel.Quit()
 
     print('HTAs added to MLOrder!')
@@ -369,7 +369,7 @@ def order_player_numbers(folder_path, number_order_list, hta_count=None):
                 order_book_count = multi_page_count // 3
                 order_path = ''.join((folder_path, '\\', 'MLOrder ', team_name, ' ', store_number, ' Part 0',
                                       str(order_book_count), '.xlsm'))
-                order_sheet.SaveAs(order_path)
+                order_sheet.SaveAs(order_path, FileFormat=52)
                 excel.DisplayAlerts = False
                 excel.Quit()
 
@@ -388,7 +388,7 @@ def order_player_numbers(folder_path, number_order_list, hta_count=None):
                 order_sheet_page.Activate()
 
     excel.DisplayAlerts = False
-    order_sheet.SaveAs(order_path)
+    order_sheet.SaveAs(order_path, FileFormat=52)
     excel.Quit()
 
     while len(illustrator.Documents):
