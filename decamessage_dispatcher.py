@@ -4,6 +4,7 @@
 # This module sends ten orders' worth of emails from the Drafts folder.
 #
 # ---------------------------------------------------------------------------------------------------------------------#
+import calendar
 import win32com.client
 from configparser import ConfigParser
 from pathlib import Path
@@ -43,7 +44,7 @@ def main():
                 print('\nAll drafts sent!')
                 return
 
-            if 'FILM' not in message_name:
+            if 'FILM' not in message_name and 'RDX' not in message_name:
                 count += 1
 
             messages[0].Send()
@@ -56,6 +57,26 @@ def main():
             print(message_name, 'sent!')
         else:
             break
+
+    messages = draftbox.Items
+    messages.Sort("[ReceivedTime]", Descending=False)
+
+    if messages:
+        try:
+            message_name = messages[0].Subject
+        except IndexError:
+            print('\nAll drafts sent!')
+            return
+
+        if 'RDX' in message_name:
+            messages[0].Send()
+
+            print(message_name, 'sending...')
+
+            while len(outbox.Items):
+                sleep(1)
+
+            print(message_name, 'sent!')
 
     if count == 10:
         print('\nBatch sent!')
