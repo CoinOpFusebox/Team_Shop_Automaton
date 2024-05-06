@@ -37,6 +37,7 @@ def main(inbound_list, team_name, store_number, page_type, page_number):
     config.read(config_path)
 
     art_files_compiled_path = config['Folder Paths']['art_files_compiled_path']
+    rdx_files_path = config['Folder Paths']['rdx_files_path']
     blank_sheet_path = config['Folder Paths']['blank_sheet_path']
     working_folder_path = config['Folder Paths']['working_folder_path']
 
@@ -51,14 +52,19 @@ def main(inbound_list, team_name, store_number, page_type, page_number):
 
     if page_type == 'Film':
         if page_number == 0:
-            header = ''.join((team_name, '\n', store_number, '\nFilm Art Actual'))
+            header = ''.join((team_name, '\n', store_number, '\nFilm Art Page'))
         else:
-            header = ''.join((team_name, '\n', store_number, '\nFilm Art Actual 0', str(page_number)))
+            header = ''.join((team_name, '\n', store_number, '\nFilm Art Page 0', str(page_number)))
     elif page_type == 'Heat Transfer':
         if page_number == 0:
-            header = ''.join((team_name, '\n', store_number, '\nORDER Art Page'))
+            header = ''.join((team_name, '\n', store_number, '\nOrder Art Page'))
         else:
-            header = ''.join((team_name, '\n', store_number, '\nORDER Art Page 0', str(page_number)))
+            header = ''.join((team_name, '\n', store_number, '\nOrder Art Page 0', str(page_number)))
+    elif page_type == 'RDX':
+        if page_number == 0:
+            header = ''.join((team_name, '\n', store_number, '\nRDX Art Page'))
+        else:
+            header = ''.join((team_name, '\n', store_number, '\nRDX Art Page 0', str(page_number)))
 
     for item in art_sheet.TextFrames:
         if item.Contents == 'Fakeville Baseballers 19Q 0123456789':
@@ -146,7 +152,11 @@ def main(inbound_list, team_name, store_number, page_type, page_number):
 
         # This bit opens the hta and assigns it a name.
 
-        hta_path = ''.join((art_files_compiled_path, '\\', order_hta[0], '.ai'))
+        if page_type == 'RDX':
+            hta_path = ''.join((rdx_files_path, '\\', order_hta[0], '.pdf'))
+        else:
+            hta_path = ''.join((art_files_compiled_path, '\\', order_hta[0].split('HTA')[0] , '\\', order_hta[0], '.ai'))
+
         illustrator.Open(hta_path)
         hta = illustrator.ActiveDocument
 
@@ -155,14 +165,21 @@ def main(inbound_list, team_name, store_number, page_type, page_number):
         #
         # This took an astounding amount of time to get working correctly, thanks to inconsistencies in HTA production.
 
-        if len(hta.TextFrames) >= 3:
-            removal_list = []
-            for item in hta.TextFrames:
-                removal_list.append(item.Left)
-            for item in hta.TextFrames:
-                if item.Left == min(removal_list):
-                    if item.Height < 100:
-                        item.Delete()
+        if page_type != 'RDX':
+            if len(hta.TextFrames):
+                for item in hta.TextFrames:
+                    if 'Do Not Use'.casefold() in item.Contents.casefold():
+                        print('DO NOT USE detected!')
+                        raise Exception('DO NOT USE detected!')
+
+            if len(hta.TextFrames) >= 3:
+                removal_list = []
+                for item in hta.TextFrames:
+                    removal_list.append(item.Left)
+                for item in hta.TextFrames:
+                    if item.Left == min(removal_list):
+                        if item.Height < 100:
+                            item.Delete()
 
         if page_type == 'Film':
             label_string = order_hta[2]
@@ -201,7 +218,7 @@ def main(inbound_list, team_name, store_number, page_type, page_number):
 
             hta.SelectObjectsOnActiveArtboard()
             film_label.TextRange.Select(True)
-        elif page_type == 'Heat Transfer':
+        else:
             hta.SelectObjectsOnActiveArtboard()
 
         # Next, the HTA is closed and pasted on the art sheet in an appropriate position.
@@ -283,7 +300,7 @@ def main(inbound_list, team_name, store_number, page_type, page_number):
     art_sheet.Close(2)
 
 
-def combobulate(folder_path, skip_heat_transfers=False):
+def combobulate(folder_path, skip_heat_transfers=False, skip_film=False):
     # This function allows other modules to call the combobulator using just a folder path.
     # Optionally, it can also be instructed to skip the heat transfer page.
 
@@ -303,7 +320,7 @@ def combobulate(folder_path, skip_heat_transfers=False):
     # This block finds the .CSV count file in the folder, if there is one, then runs it through the
     # count_comparitron and count_transmogrifier to get accurate heat transfer and film lists.
 
-    csv_path, film_list, transfer_list = '', '', ''
+    csv_path, rdx_list, film_list, transfer_list = '', '', '', ''
 
     for file in os.listdir(folder_path):
         if file.endswith('.csv') and 'Count' in file:
@@ -311,13 +328,17 @@ def combobulate(folder_path, skip_heat_transfers=False):
             if any(word in str(folder_path.split(os.path.sep)[-2]) for word in milb_list):
                 transfer_list = []
                 film_list = count_comparitron.compare_helmets(count_transmogrifier.count_milb_film(csv_path))
+                rdx_list = count_comparitron.compare_rdx(count_transmogrifier.count_rdx(csv_path))
                 break
             elif any(word in str(folder_path.split(os.path.sep)[-2]) for word in direct_transfer_list):
                 transfer_list = []
                 film_list = count_comparitron.compare_helmets(count_transmogrifier.count_film(csv_path))
+                rdx_list = count_comparitron.compare_rdx(count_transmogrifier.count_rdx(csv_path))
+                break
             else:
                 transfer_list = count_comparitron.compare_transfers(count_transmogrifier.count_heat_transfers(csv_path))
                 film_list = count_comparitron.compare_helmets(count_transmogrifier.count_film(csv_path))
+                rdx_list = count_comparitron.compare_rdx(count_transmogrifier.count_rdx(csv_path))
                 break
 
     if csv_path == '':
@@ -357,23 +378,45 @@ def combobulate(folder_path, skip_heat_transfers=False):
 
     # This one does the same but for film.
 
+    if not skip_film:
+        try:
+            if film_list:
+                if len(film_list) <= 10:
+                    main(film_list, team_name, store_number, 'Film', 0)
+                    print('Film page created!')
+
+                else:
+                    film_iter = more_itertools.chunked(film_list, 10)
+                    page_number = 1
+                    for sublist in film_iter:
+                        main(sublist, team_name, store_number, 'Film', page_number)
+                        page_number += 1
+                    print('Film pages created!')
+            else:
+                print('No film required!')
+        except:
+            print('Film page(s) FAILED!')
+            return True
+
+    # This one does the same but for raised decal helmets.
+
     try:
-        if film_list:
-            if len(film_list) <= 10:
-                main(film_list, team_name, store_number, 'Film', 0)
-                print('Film page created!')
+        if rdx_list:
+            if len(rdx_list) <= 10:
+                main(rdx_list, team_name, store_number, 'RDX', 0)
+                print('RDX page created!')
 
             else:
-                film_iter = more_itertools.chunked(film_list, 10)
+                rdx_iter = more_itertools.chunked(rdx_list, 10)
                 page_number = 1
-                for sublist in film_iter:
-                    main(sublist, team_name, store_number, 'Film', page_number)
+                for sublist in rdx_iter:
+                    main(sublist, team_name, store_number, 'RDX', page_number)
                     page_number += 1
-                print('Film pages created!')
+                print('RDX pages created!')
         else:
-            print('No film required!')
+            print('No RDX required!')
     except:
-        print('Film page(s) FAILED!')
+        print('RDX page(s) FAILED!')
         return True
 
     # If anything went wrong, the module should have already returned True. Otherwise, it will now return False.
