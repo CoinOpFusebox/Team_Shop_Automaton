@@ -9,6 +9,7 @@ import csv
 import os
 import win32com.client as win32
 from configparser import ConfigParser
+from datetime import date, timedelta
 from pathlib import Path
 
 config_path = Path(__file__).parent.absolute().joinpath('config.ini')
@@ -41,6 +42,7 @@ def main(folder_path):
     needs_player_numbers = False
     has_film = False
     has_embroidery = False
+    has_rdx = False
 
     # This block finds the path for the count .CSV in the folder. If it fails to do so, the module is terminated.
 
@@ -99,7 +101,7 @@ def main(folder_path):
     # This checks the folder for evidence of film items.
 
     for file in os.listdir(folder_path):
-        if 'Film Art Actual' in str(file):
+        if 'Film Art Page' in str(file):
             has_film = True
             break
 
@@ -107,9 +109,16 @@ def main(folder_path):
 
     if has_heat_transfers:
         for file in os.listdir(folder_path):
-            if 'ORDER Art Page' in str(file):
+            if 'Order Art Page' in str(file):
                 needs_heat_transfers = True
                 break
+
+    # This checks the folder for evidence of RDX helmets.
+
+    for file in os.listdir(folder_path):
+        if 'RDX Art Page' in str(file):
+            has_rdx = True
+            break
 
     # This block selects the type of email(s) that will be sent based on the information gathered above.
 
@@ -125,6 +134,9 @@ def main(folder_path):
         compose_embroidery(folder_path, csv_path)
     else:
         compose_stock(has_embroidery, folder_path, csv_path)
+
+    if has_rdx:
+        compose_rdx(folder_path, csv_path)
 
 
 def compose_combo(needs_heat_transfers, has_player_numbers, needs_player_numbers, has_embroidery, folder_path,
@@ -147,7 +159,7 @@ def compose_combo(needs_heat_transfers, has_player_numbers, needs_player_numbers
     film_attachment_list = [csv_path]
 
     for file in os.listdir(folder_path):
-        if 'Actual' in str(file):
+        if 'Film Art Page' in str(file):
             film_attachment_list.append(os.path.join(folder_path, file))
 
     # This calls the mail_maker function to cobble together an email from these elements.
@@ -183,7 +195,7 @@ def compose_combo(needs_heat_transfers, has_player_numbers, needs_player_numbers
             trans_attachment_list.append(os.path.join(folder_path, file))
 
     for file in os.listdir(folder_path):
-        if 'ORDER Art Page' in str(file):
+        if 'Order Art Page' in str(file):
             trans_attachment_list.append(os.path.join(folder_path, file))
 
     for file in os.listdir(folder_path):
@@ -233,7 +245,7 @@ def compose_film(has_heat_transfers, has_player_numbers, has_embroidery, folder_
     attachment_list = [csv_path]
 
     for file in os.listdir(folder_path):
-        if 'Actual' in str(file):
+        if 'Film Art Page' in str(file):
             attachment_list.append(os.path.join(folder_path, file))
 
     for file in os.listdir(folder_path):
@@ -288,7 +300,7 @@ def compose_transfer(needs_heat_transfers, has_player_numbers, needs_player_numb
             attachment_list.append(os.path.join(folder_path, file))
 
     for file in os.listdir(folder_path):
-        if 'ORDER Art Page' in str(file):
+        if 'Order Art Page' in str(file):
             attachment_list.append(os.path.join(folder_path, file))
 
     for file in os.listdir(folder_path):
@@ -319,7 +331,7 @@ def compose_embroidery(folder_path, csv_path):
 
     subject = folder_path.split(os.path.sep)[-2] + ' ' + folder_path.split(os.path.sep)[-1]
 
-    body_list = 'This order is all Embroidered Items. No heat transfers. No player numbers. No film.'
+    body_list = ['This order is all Embroidered Items. No heat transfers. No player numbers. No film.']
 
     attachment_list = [csv_path]
 
@@ -351,8 +363,32 @@ def compose_stock(has_embroidery, folder_path, csv_path):
     return
 
 
+def compose_rdx(folder_path, csv_path):
+    # This function creates an additional email for RDX helmets.
+    # This email is always separate because it seems like a good idea.
+
+    subject = folder_path.split(os.path.sep)[-2] + ' ' + folder_path.split(os.path.sep)[-1] + ' RDX'
+
+    body_list = ['This order also requires RDX helmet decals.']
+
+    attachment_list = [csv_path]
+
+    for file in os.listdir(folder_path):
+        if 'RDX Art Page' in str(file):
+            attachment_list.append(os.path.join(folder_path, file))
+
+    mail_maker(subject, body_list, attachment_list)
+
+    print('Email generated: RDX')
+    return
+
+
 def mail_maker(subject, body_list, attachment_list):
     # This function takes the prepared email components from any one of the "compose" functions and creates an email.
+    
+    ship_date = date.today() + timedelta(days=7)
+    ship_date_string = ''.join(('\n\nArt Ship Date: ', ship_date.strftime("%B %d, %Y")))
+    body_list.append(ship_date_string)
 
     outlook = win32.Dispatch('Outlook.Application')
     mail_item = outlook.CreateItem(0)
