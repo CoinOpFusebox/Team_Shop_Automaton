@@ -645,3 +645,11 @@ helmet_white.Cyan = 0.000000
 helmet_white.Magenta = 0.000000
 helmet_white.Yellow = 0.000000
 helmet_white.Black = 0.000000
+
+# These are the custom colors.
+
+banana_yellow_pms116 = win32com.client.Dispatch('Illustrator.CMYKColor')
+banana_yellow_pms116.Cyan = 5.000000
+banana_yellow_pms116.Magenta = 21.000000
+banana_yellow_pms116.Yellow = 98.000000
+banana_yellow_pms116.Black = 1.000000
