@@ -29,7 +29,7 @@ def main():
     for item in messages:
         message_name = item.Subject
 
-        if 'FILM' not in message_name:
+        if 'FILM' not in message_name and 'RDX' not in message_name:
             count += 1
 
     print(count, 'draft orders!')
