@@ -30,6 +30,7 @@ direct_transfer_list = str(config['Special Teams']['direct_transfer_list']).spli
 # This dictionary matches abbreviated colors with their full names and their short names.
 
 chromotome = {
+    'Bny': 'Banana Yellow (PMS116)',
     'Blk': 'Black',
     'Vin': 'Vintage White',
     'Wht': 'White',
@@ -251,6 +252,8 @@ def crunch(line, kid_mode, crunched_list, folder_path):
         font = 'Nca'
     elif any(word in sparta_notes.casefold() for word in ['arizona'.casefold(), 'ari'.casefold()]):
         font = 'Ari'
+    elif any(word in sparta_notes.casefold() for word in ['england'.casefold(), 'new'.casefold()]):
+        font = 'New'
     elif 'custom'.casefold() in sparta_notes.casefold():
         if 'canes'.casefold() in folder_path.casefold():
             font = 'Ari'
@@ -465,8 +468,24 @@ def craft(player_number_list, folder_path, csv_path):
 
     for player_numbers in player_number_list:
         # freedom_mode activates for the special American flag lettering.
+        # 
+        # bichromatic_vortex_mode activates for two-color Vortex numbers because they're now coming through as
+        # three-color numbers with a blank middle.
+        #
+        # Ditto bichromatic_fancy_mode.
+        
         freedom_mode = False
+        bichromatic_vortex_mode = False
+        bichromatic_fancy_mode = False
 
+
+        if player_numbers.font == 'Vor' and player_numbers.color_2 == 'Sth' and player_numbers.color_3:
+            bichromatic_vortex_mode = True
+        elif player_numbers.font == 'Fan' and player_numbers.color_2 == 'Sth' and player_numbers.color_3:
+            bichromatic_fancy_mode = True
+        elif player_numbers.font == 'Fbk' and player_numbers.color_2 == 'Sth' and player_numbers.color_3:
+            bichromatic_fancy_mode = True
+        
         # This block gets the path for the template file.
 
         if player_numbers.color_3:
@@ -475,10 +494,24 @@ def craft(player_number_list, folder_path, csv_path):
             color_count = '2-C'
         else:
             color_count = '1-C'
-
-        if player_numbers.color_1 == 'Sth':
+            
+        # This accounts for the new way two-color Vortex numbers are annotated; they're now represented as three-color
+        # numbers with a Show-Through Color 2. It's still easier to keep using the two-color template.
+            
+        if bichromatic_vortex_mode:
+            template_path = ''.join(
+                (number_path, '\\', player_numbers.font.upper(), '\\2-C\\', player_numbers.size, ' ',
+                 player_numbers.font, '.ai'))
+        
+        elif bichromatic_fancy_mode:
+            template_path = ''.join(
+                (number_path, '\\', player_numbers.font.upper(), '\\STH\\2-C\\', player_numbers.size, ' ',
+                 player_numbers.font, '.ai'))
+        
+        elif player_numbers.color_1 == 'Sth':
             template_path = ''.join((number_path, '\\', player_numbers.font.upper(), '\\STH\\', player_numbers.size,
                                      ' ', player_numbers.font, '.ai'))
+        
         elif player_numbers.font == 'Usa':
             freedom_mode = True
             player_numbers.font = 'Fbk'
@@ -519,6 +552,8 @@ def craft(player_number_list, folder_path, csv_path):
             long_font = 'NCAA'
         elif player_numbers.font == 'Ari':
             long_font = 'Arizona'
+        elif player_numbers.font == 'New':
+            long_font = 'New England'
         else:
             long_font = '???'
 
@@ -544,7 +579,7 @@ def craft(player_number_list, folder_path, csv_path):
 
             for group in number_sheet.GroupItems:
                 if group.Name == 'Color 1':
-                    wilson_color = getattr(wilson_colors, chromotome[player_numbers.color_1].replace(' ', '_').lower())
+                    wilson_color = getattr(wilson_colors, chromotome[player_numbers.color_1].replace(' ', '_').replace('(','').replace(')','').lower())
                     for item in group.PathItems:
                         item.SetFillColor(wilson_color)
                         sleep(.2)
@@ -554,17 +589,27 @@ def craft(player_number_list, folder_path, csv_path):
                             sleep(.2)
 
                 if group.Name == 'Color 2':
-                    wilson_color = getattr(wilson_colors, chromotome[player_numbers.color_2].replace(' ', '_').lower())
-                    for item in group.PathItems:
-                        item.SetFillColor(wilson_color)
-                        sleep(.2)
-                    for item in group.CompoundPathItems:
-                        for sub_item in item.PathItems:
-                            sub_item.SetFillColor(wilson_color)
+                    if bichromatic_vortex_mode or bichromatic_fancy_mode:
+                        wilson_color = getattr(wilson_colors, chromotome[player_numbers.color_3].replace(' ', '_').replace('(','').replace(')','').lower())
+                        for item in group.PathItems:
+                            item.SetFillColor(wilson_color)
                             sleep(.2)
+                        for item in group.CompoundPathItems:
+                            for sub_item in item.PathItems:
+                                sub_item.SetFillColor(wilson_color)
+                                sleep(.2)
+                    else:
+                        wilson_color = getattr(wilson_colors, chromotome[player_numbers.color_2].replace(' ', '_').replace('(','').replace(')','').lower())
+                        for item in group.PathItems:
+                            item.SetFillColor(wilson_color)
+                            sleep(.2)
+                        for item in group.CompoundPathItems:
+                            for sub_item in item.PathItems:
+                                sub_item.SetFillColor(wilson_color)
+                                sleep(.2)
 
                 if group.Name == 'Color 3':
-                    wilson_color = getattr(wilson_colors, chromotome[player_numbers.color_3].replace(' ', '_').lower())
+                    wilson_color = getattr(wilson_colors, chromotome[player_numbers.color_3].replace(' ', '_').replace('(','').replace(')','').lower())
                     for item in group.PathItems:
                         item.SetFillColor(wilson_color)
                         sleep(.2)
@@ -743,24 +788,32 @@ def craft(player_number_list, folder_path, csv_path):
 
 
 def chromatic_enumerator(sparta_notes):
-    count_string = sparta_notes.split('A')[0]
+    # This function takes a Sparta Notes string and gets a color count from it.
+    #
+    # People sometimes mess up the explicit color count (3-C on a two-color number, for example), so this counts the
+    # slashes and compares the two numbers. When in doubt,the slash count prevails unless it is nonsensical.
+    #
+    # Previously, this trimmed the Notes down into a substring to avoid a scenario in which slashes have been used in
+    # place of hyphens for the sizing info, but a: this has turned out not to be a real problem, b: the formatting on
+    # the sizing info is inconsistent enough to make this a fool's errand, and c: it was causing trouble with NCAA
+    # numbers.
 
-    if '1-C' in count_string:
+    if '1-C' in sparta_notes:
         c_color_count = 1
-    elif '2-C' in count_string:
+    elif '2-C' in sparta_notes:
         c_color_count = 2
-    elif '3-C' in count_string:
+    elif '3-C' in sparta_notes:
         c_color_count = 3
-    elif '1' in count_string:
+    elif '1' in sparta_notes:
         c_color_count = 1
-    elif '2' in count_string:
+    elif '2' in sparta_notes:
         c_color_count = 2
     else:
         c_color_count = 3
 
     s_color_count = 1
 
-    for character in count_string:
+    for character in sparta_notes:
         if character == '/':
             s_color_count += 1
 
@@ -816,7 +869,7 @@ def color_picker(color_string):
         return 'Dkg'
     elif 'kelly'.casefold() in color_string.casefold():
         return 'Kel'
-    elif 'tennessee'.casefold() in color_string.casefold() or 'tn'.casefold() in color_string.casefold():
+    elif 'tenn'.casefold() in color_string.casefold() or 'tn'.casefold() in color_string.casefold():
         return 'Tno'
     elif 'texas'.casefold() in color_string.casefold() or 'tx'.casefold() in color_string.casefold():
         return 'Tex'
@@ -854,8 +907,10 @@ def color_picker(color_string):
         return 'Ldv'
     elif 'elec'.casefold() in color_string.casefold():
         return 'Ebl'
-    elif 'show'.casefold() in color_string.casefold():
+    elif 'show'.casefold() in color_string.casefold()or 'none'.casefold() in color_string.casefold():
         return 'Sth'
+    elif '116'.casefold() in color_string.casefold():
+        return 'Bny'
     else:
         return '???'
 
