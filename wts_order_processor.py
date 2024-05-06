@@ -9,9 +9,10 @@ import atexit
 import os
 import re
 import shutil
-
 import win32com.client
+
 from configparser import ConfigParser
+from datetime import datetime
 from pathlib import Path
 from subprocess import run, DEVNULL
 from time import sleep
@@ -76,6 +77,7 @@ def main():
 
     skip_heat_transfers = False
     skip_film = False
+    skip_rdx = False
     skip_numbers = False
     skip_ml_order = False
 
@@ -88,6 +90,9 @@ def main():
 
             if 'f' in skip_string:
                 skip_film = True
+
+            if 'r' in skip_string:
+                skip_rdx = True
 
             if 'n' in skip_string:
                 skip_numbers = True
@@ -102,21 +107,28 @@ def main():
 
     # This block calls the art_page_combobulator to create any required heat transfer or film art pages.
 
-    if not skip_heat_transfers and not skip_film:
+    if not skip_heat_transfers and not skip_film and not skip_rdx:
         try:
             art_sheet_problem = art_page_combobulator.combobulate(folder_path)
         except:
             fail(folder_path, working_folder_path, failed_folder_path)
             return True
-    elif not skip_film:
+    elif not skip_film and not skip_rdx:
         print("Heat transfer page already created!")
         try:
             art_sheet_problem = art_page_combobulator.combobulate(folder_path, skip_heat_transfers=True)
         except:
             fail(folder_path, working_folder_path, failed_folder_path)
             return True
-    else:
+    elif not skip_rdx:
         print("Heat transfer and/or film page(s) already created!")
+        try:
+            art_sheet_problem = art_page_combobulator.combobulate(folder_path, skip_heat_transfers=True, skip_film=True)
+        except:
+            fail(folder_path, working_folder_path, failed_folder_path)
+            return True
+    else:
+        print("All art pages already created!")
 
     # If the combobulator was unsuccessful, this block moves the folder and terminates the program.
 
@@ -185,10 +197,7 @@ def main():
         fail(folder_path, working_folder_path, failed_folder_path)
         return True
 
-    # This block deletes the Number Order List text file and moves the folder into Finished Folders.
-
-    old_team_path = Path(folder_path).parent
-    new_team_path = str(old_team_path).replace(working_folder_path, finished_folder_path)
+    # This block deletes the Number Order List text file and moves the folder into 20XX Orders.
 
     sleep(10)
 
@@ -197,14 +206,55 @@ def main():
     except FileNotFoundError:
         pass
 
-    os.makedirs(new_team_path, exist_ok=True)
-    shutil.move(str(folder_path), str(new_team_path))
-    if not len(os.listdir(old_team_path)):
-        os.rmdir(old_team_path)
+    put_away(folder_path, finished_folder_path)
 
     print('Order processed successfully!\n')
 
     return True
+
+
+def put_away(working_path, finished_folder_path):
+    # This function moves a successful order's files into long-term storage.
+
+    # working_path is the folder within which the files have been stored thus far.
+    # finished_folder_path is the base destination folder.
+
+    # destination_path is the complete and order-specific destination folder.
+    # art_pgs_path is where most of the files go.
+    # film_path is where the film files go.
+
+    store_id = str(working_path.split(os.path.sep)[-1])
+    destination_path = ''.join((finished_folder_path, '\\', str(datetime.now().year), ' Orders\\', store_id))
+    # destination_path = ''.join((finished_folder_path, '\\2023 Orders\\', store_id))
+    art_pgs_path = ''.join((destination_path, '\\Art Pgs'))
+
+    film_path = ''
+
+    while not film_path:
+        for dirpath, dirnames, filenames in os.walk(destination_path):
+            if 'Film' in dirpath:
+                film_path = dirpath
+                break
+
+    while os.listdir(working_path):
+        file = os.listdir(working_path)[0]
+
+        old_path = ''.join((working_path, '\\', file))
+
+        if 'Film' in file:
+            new_path = ''.join((film_path, '\\', file))
+        else:
+            new_path = ''.join((art_pgs_path, '\\', file))
+
+        shutil.move(old_path, new_path)
+
+    if not os.listdir(working_path):
+        os.rmdir(working_path)
+
+    if not os.listdir(Path(working_path).parent):
+        os.rmdir(Path(working_path).parent)
+
+    print('Order moved successfully!')
 
 
 def fail(folder_path, working_folder_path, failed_folder_path):
@@ -256,11 +306,14 @@ def in_medias_resonator(folder_path):
     number_sheet = False
 
     for file in os.listdir(folder_path):
-        if 'ORDER Art Page.' in file:
+        if 'Order Art Page.' in file:
             skip_list.append('h')
             continue
-        elif 'Film Art Actual.' in file:
+        elif 'Film Art Page.' in file:
             skip_list.append('f')
+            continue
+        elif 'RDX Art Page.' in file:
+            skip_list.append('r')
             continue
         elif 'Number Order List' in file:
             number_order_sheet = True
