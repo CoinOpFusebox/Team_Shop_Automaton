@@ -13,6 +13,8 @@ import os
 import re
 import win32com.client
 
+from datetime import datetime
+
 
 def count_heat_transfers(csv_path):
     # csv_path contains the path for the count sheet.
@@ -143,7 +145,7 @@ def count_film(csv_path):
         # This will fail if a player is named "Anne" or "Nona" when there is also a "None", but c'est la vie.
 
         for line in reader:
-            if 'glove'.casefold() in str(line).casefold() or 'RDX'.casefold() in str(line).casefold():
+            if 'glove'.casefold() in str(line).casefold() or 'RDX'.casefold() in str(line).casefold() or 'CUSTOM'.casefold() in str(line).casefold():
                 continue
 
             try:
@@ -219,14 +221,19 @@ def count_film(csv_path):
 
         if names_and_numbers:
             try:
-                sub_art_path = ''.join(('R:\\Sublimation Artwork 2\\', csv_path.split(os.path.sep)[-3], '\\',
-                                        csv_path.split(os.path.sep)[-2]))
+                id_folder_path = ''.join(('R:\\Orders\\WTS Orders\\', str(datetime.now().year), ' Orders\\',
+                                          csv_path.split(os.path.sep)[-2]))
+
+                for dirpath, dirnames, filenames in os.walk(id_folder_path):
+                    if 'Film' in dirpath:
+                        film_folder_path = dirpath
+                        break
 
                 name_and_numbers_found = False
 
-                for file in os.listdir(sub_art_path):
+                for file in os.listdir(film_folder_path):
                     if 'HTA' not in file and '.eps' in file:
-                        names_and_numbers_path = ''.join((sub_art_path, '\\', str(file)))
+                        names_and_numbers_path = ''.join((film_folder_path, '\\', str(file)))
                         illustrator = win32com.client.gencache.EnsureDispatch('Illustrator.Application')
                         illustrator.UserInteractionLevel = -1
                         illustrator.Open(names_and_numbers_path)
@@ -363,7 +370,7 @@ def count_milb_film(csv_path):
         # This will fail if a player is named "Anne" or "Nona" when there is also a "None", but c'est la vie.
 
         for line in reader:
-            if 'glove'.casefold() in str(line).casefold() or 'RDX'.casefold() in str(line).casefold():
+            if 'glove'.casefold() in str(line).casefold() or 'RDX'.casefold() in str(line).casefold() or 'CUSTOM'.casefold() in str(line).casefold():
                 continue
 
             try:
@@ -455,11 +462,8 @@ def count_milb_film(csv_path):
                 duplicate_list.append(item)
                 continue
             if item[0] == last_name and item[2] == last_type:
-                print(duplicate_list[-1][1])
-                print(last_quantity)
                 duplicate_list[-1] = (last_name, last_quantity + item[1], last_type)
                 last_quantity = duplicate_list[-1][1]
-                print(last_quantity)
             else:
                 duplicate_list.append(item)
                 last_name = item[0]
@@ -470,14 +474,14 @@ def count_milb_film(csv_path):
 
         if names_and_numbers:
             try:
-                sub_art_path = ''.join(('R:\\Sublimation Artwork 2\\', csv_path.split(os.path.sep)[-3], '\\',
-                                        csv_path.split(os.path.sep)[-2]))
+                film_folder_path = ''.join(('R:\\_Old Structure\\Sublimation Artwork 2\\',
+                                            csv_path.split(os.path.sep)[-3], '\\', csv_path.split(os.path.sep)[-2]))
 
                 name_and_numbers_found = False
 
-                for file in os.listdir(sub_art_path):
+                for file in os.listdir(film_folder_path):
                     if 'HTA' not in file and '.eps' in file:
-                        names_and_numbers_path = ''.join((sub_art_path, '\\', str(file)))
+                        names_and_numbers_path = ''.join((film_folder_path, '\\', str(file)))
                         illustrator = win32com.client.gencache.EnsureDispatch('Illustrator.Application')
                         illustrator.UserInteractionLevel = -1
                         illustrator.Open(names_and_numbers_path)
@@ -515,12 +519,101 @@ def count_milb_film(csv_path):
     return outbound_list
 
 
+def count_rdx(csv_path):
+    # csv_path contains the path for the count sheet.
+
+    # outbound_list is a list that will contain a tuple for each HTA and its quantity.
+    # If it remains empty, the order has none of the selected type of item.
+
+    # inv_tuple is the most recently added HTA on the list.
+
+    outbound_list = []
+    inv_tuple = ()
+
+    # This opens the count file.
+
+    with open(csv_path, 'r', errors="ignore") as csv_count:
+        reader = csv.reader(csv_count)
+
+        # before_string and after_string contain the text that abuts the desired lines.
+
+        before_string = '\'Film\''
+        after_string = '\'Total\''
+
+        # These loops check for the before_string. When it's found, the loop ends.
+
+        for line in reader:
+            if before_string in str(line):
+                break
+
+        # This block checks for the end_string.
+        # If it's not found and the line contains "RDX", it converts the line into a tuple and adds it to the
+        # outbound_list. When it's found, the loop ends.
+
+        for line in reader:
+            if after_string in str(line):
+                break
+            
+            if 'custom'.casefold() in str(line).casefold():
+                continue
+
+            if 'RDX' in str(line[0]):
+                hta_name = str(line[0])
+                hta_number = int(line[1])
+
+                if inv_tuple:
+                    if inv_tuple[0] == str(hta_name):
+                        outbound_list[-1] = (outbound_list[-1][0], outbound_list[-1][1] + hta_number)
+                        continue
+
+                inv_tuple = (str(hta_name), hta_number)
+                outbound_list.append(inv_tuple)
+        
+        csv_count.close()
+        
+    # This block accounts for the new way RDX stuff is done.
+    # (It would be nice if people would COMMUNICATE when they are going to change something. :| )
+    # re_reader starts anew to avoid positional confusion.
+        
+    with open(csv_path, 'r', errors="ignore") as csv_count:
+        re_reader = csv.reader(csv_count)
+
+        before_string = '3D'
+
+        for line in re_reader:
+            if before_string in str(line):
+                break
+
+        for line in re_reader:
+            if after_string in str(line):
+                break
+            
+            if 'custom'.casefold() in str(line).casefold():
+                continue
+            
+            if 'RDX' in str(line[0]):
+                hta_name = str(''.join((line[0].split('RDX')[0], 'RDX')))
+                hta_number = int(line[1])
+
+                if inv_tuple:
+                    if inv_tuple[0] == str(hta_name):
+                        outbound_list[-1] = (outbound_list[-1][0], outbound_list[-1][1] + hta_number)
+                        continue
+
+                inv_tuple = (str(hta_name), hta_number)
+                outbound_list.append(inv_tuple)
+
+    return outbound_list
+
+
 def rectifier(whole_hta_string):
     # This function makes sure that the HTA number has the proper number of digits, which is four.
     # It does this by adding or removing leading zeroes.
     # Now with 20% more not crashing on film pieces with no HTA!
     #
     # The quadifier is now the rectifier, which also corrects common issues and typos.
+    #
+    # It also un-corrects typos in some unfortunate cases.
 
     whole_hta_list = re.split("HTA", whole_hta_string)
 
@@ -545,5 +638,8 @@ def rectifier(whole_hta_string):
 
     if 'CustomerStyle' in whole_hta_string:
         whole_hta_string = whole_hta_string.replace('CustomerStyle', '')
+
+    if 'EasternShoreForce' in whole_hta_string:
+        whole_hta_string = whole_hta_string.replace('EasternShoreForce', 'EasternShore Force')
 
     return whole_hta_string
