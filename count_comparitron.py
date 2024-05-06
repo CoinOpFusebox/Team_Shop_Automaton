@@ -154,7 +154,7 @@ def compare_transfers(outbound_list):
 
 def compare_helmets(outbound_list):
     # The warehouse folks added helmet decals to the inventory, so this checks the inventory before ordering them.
-    # For more details on how this all works, please see the other function in this module.
+    # For more details on how this all works, please see the compare_transfers function in this module.
 
     # This skips this whole rigamarole if the names/numbers are missing.
 
@@ -180,7 +180,7 @@ def compare_helmets(outbound_list):
 
     for i in range(len(outbound_list)):
         # There's no inventory for regular film, so this will skip non-helmet items.
-        if 'Helmet' not in outbound_list[i][2]:
+        if 'FILLER TEXT' not in outbound_list[i][2]:
             inbound_list.append(outbound_list[i])
             continue
 
@@ -275,6 +275,75 @@ def compare_helmets(outbound_list):
                 else:
                     inbound_tuple = (whole_hta_string, units_needed, 'Helmet')
                     inbound_list.append(inbound_tuple)
+
+    if inbound_list:
+        return inbound_list
+    else:
+        return None
+
+
+def compare_rdx(outbound_list):
+    # This checks the inventory for raised (RDX) helmets.
+    # For more details on how this all works, please see the compare_transfers function in this module.
+
+    # This skips this whole rigamarole if the names/numbers are missing.
+
+    if outbound_list == 'Names and numbers not found!':
+        return 'Names and numbers not found!'
+
+    # This establishes the connection to the database.
+
+    load_dotenv()
+
+    connection_list = ['DSN=Heat Transfer Inventory;Database=Heat Transfer Inventory;UID=',
+                       os.getenv('HTI_UID'),
+                       ';PWD=',
+                       os.getenv('HTI_PWD')]
+
+    connection = pyodbc.connect(''.join(connection_list))
+    cursor = connection.cursor()
+
+    # outbound_list is a list of HTAs that have been ordered by the customer.
+    # inbound_list is a list of HTAs that we don't already have in the warehouse, which must be made or ordered.
+
+    inbound_list = []
+
+    for i in range(len(outbound_list)):
+        # This block unpacks the HTA name and quantity for easy use.
+
+        whole_hta_string = str(outbound_list[i][0])
+
+        units_needed = int(outbound_list[i][1])
+
+        # Provided the quantity is greater than zero, this block checks the quantity in stock and compares it to the
+        # quantity required. Since we only order the number of helmet decals we need (no minimum order quantity, no
+        # rounding up), we just subtract the number in stock from the number required. If the resulting number is
+        # greater than zero, the item stays on (technically, is added to) the inbound list.
+        #
+        # When in doubt, this module errs on the side of ordering what it doesn't understand.
+
+        if units_needed > 0:
+            try:
+                units_on_hand = int(cursor.execute('SELECT "Units on Hand" FROM Inventory WHERE "ITEM ID MATCH FIELD"=?',
+                                                   whole_hta_string).fetchval())
+
+                # If there's negative inventory, this just orders the original quantity.
+
+                if units_on_hand < 0:
+                    inbound_tuple = (whole_hta_string, units_needed)
+                    inbound_list.append(inbound_tuple)
+                    continue
+
+                units_to_order = units_needed - units_on_hand
+
+                if units_to_order > 0:
+                    inbound_tuple = (whole_hta_string, units_to_order)
+                    inbound_list.append(inbound_tuple)
+                else:
+                    continue
+            except TypeError:
+                inbound_tuple = (whole_hta_string, units_needed)
+                inbound_list.append(inbound_tuple)
 
     if inbound_list:
         return inbound_list
